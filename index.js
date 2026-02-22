@@ -1,17 +1,18 @@
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-
+const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve MP3 files
+app.use(cors());
+
 app.use("/songs", express.static(path.join(__dirname, "songs")));
 
-// Read all songs from the folder
+
 const songs = fs.readdirSync(path.join(__dirname, "songs"));
 
-// In-memory cache for song of the day
+
 let savedDate = null;
 let songIndex = null;
 
@@ -26,7 +27,7 @@ function getSongOfTheDay() {
   return songs[songIndex];
 }
 
-// API endpoint
+
 app.get("/song-of-the-day", (req, res) => {
   const song = getSongOfTheDay();
   const url = `${req.protocol}://${req.get("host")}/songs/${song}`;
@@ -36,5 +37,5 @@ app.get("/song-of-the-day", (req, res) => {
   });
 });
 
-// Start server
+
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
