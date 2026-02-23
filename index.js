@@ -2,29 +2,43 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const cors = require("cors");
+const { pathToFileURL } = require("url");
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+const songsFolder = path.join(__dirname, "songs")
 app.use(cors());
 
-app.use("/songs", express.static(path.join(__dirname, "songs")));
+app.use("/songs", express.static(songsFolder));
+
+let cachedFile = path.join(__dirname, "songsCache.json")
 
 
-const songs = fs.readdirSync(path.join(__dirname, "songs"));
-
-
-let savedDate = null;
-let songIndex = null;
+function getToday(){
+  return new Date().toDateString()
+}
 
 function getSongOfTheDay() {
-  const today = new Date().toDateString();
+  const today = getToday();
+  const songs = fs.readdirSync(songsFolder)
 
-  if (savedDate !== today || songIndex === null) {
-    songIndex = Math.floor(Math.random() * songs.length);
-    savedDate = today;
+  let cache = null;
+
+  if(fs.existsSync(cachedFile)){
+    cache = JSON.parse(fs.readFileSync(cachedFile, "utf-8"))
   }
 
-  return songs[songIndex];
+  if(!cache || cache.date !== today){
+    const randomSong = songs[Math.floor(Math.random() * songs.length)]
+
+    cache = {
+      date: today,
+      song: randomSong
+    }
+
+    fs.writeFileSync(cachedFile, JSON.stringify(cache, null, 2))
+  }
+
+  return cache.song;
 }
 
 
