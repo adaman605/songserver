@@ -14,7 +14,7 @@ let cachedFile = path.join(__dirname, "songsCache.json")
 
 
 function getToday(){
-  return new Date().toDateString()
+  return new Date().toISOString().split("T")[0]
 }
 
 function getSongOfTheDay() {
