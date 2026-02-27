@@ -1,54 +1,31 @@
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
 const cors = require("cors");
-const { pathToFileURL } = require("url");
+const { default: supabase } = require("./supabase");
 const app = express();
 const PORT = process.env.PORT || 3000;
-const songsFolder = path.join(__dirname, "songs")
 app.use(cors());
 
-app.use("/songs", express.static(songsFolder));
-
-let cachedFile = path.join(__dirname, "songsCache.json")
 
 
-function getToday(){
-  return new Date().toISOString().split("T")[0]
+
+
+async function getData() {
+  const { data, error } = await supabase
+    .from("todaysong")
+    .select("song (*)");
+
+  if (error) throw error;
+  return data?.[0]?.song || null;
 }
 
-function getSongOfTheDay() {
-  const today = getToday();
-  const songs = fs.readdirSync(songsFolder)
-
-  let cache = null;
-
-  if(fs.existsSync(cachedFile)){
-    cache = JSON.parse(fs.readFileSync(cachedFile, "utf-8"))
+app.get("/song-of-the-day", async (req, res) => {
+  try {
+    const song = await getData();
+    if (!song) return res.status(404).json({ error: "No song found" });
+    res.json(song);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  if(!cache || cache.date !== today){
-    const randomSong = songs[Math.floor(Math.random() * songs.length)]
-
-    cache = {
-      date: today,
-      song: randomSong
-    }
-
-    fs.writeFileSync(cachedFile, JSON.stringify(cache, null, 2))
-  }
-
-  return cache.song;
-}
-
-
-app.get("/song-of-the-day", (req, res) => {
-  const song = getSongOfTheDay();
-  const url = `${req.protocol}://${req.get("host")}/songs/${song}`;
-  res.json({ 
-    date: new Date().toISOString().split("T")[0],
-    url: url
-  });
 });
 
 
